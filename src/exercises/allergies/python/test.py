@@ -1,0 +1,20 @@
+if 'allergic_to' not in globals() or 'list_allergies' not in globals():
+    raise Exception("allergic_to and list_allergies functions must be defined")
+
+Tests.equal_check("not allergic to anything", False, allergic_to("eggs", 0))
+Tests.equal_check("allergic only to eggs", True, allergic_to("eggs", 1))
+Tests.equal_check("allergic to eggs and something else", True, allergic_to("eggs", 3))
+Tests.equal_check("allergic to something, but not eggs", False, allergic_to("eggs", 2))
+Tests.equal_check("allergic to everything", True, allergic_to("eggs", 255))
+Tests.equal_check("allergic to peanuts", True, allergic_to("peanuts", 7))
+Tests.equal_check("ignores non-allergen bits for allergic_to", True, allergic_to("eggs", 257))
+
+Tests.equal_check("no allergies", [], list_allergies(0))
+Tests.equal_check("just eggs", ["eggs"], list_allergies(1))
+Tests.equal_check("just peanuts", ["peanuts"], list_allergies(2))
+Tests.equal_check("just strawberries", ["strawberries"], list_allergies(8))
+Tests.equal_check("eggs and peanuts", ["eggs", "peanuts"], list_allergies(3))
+Tests.equal_check("more than eggs but not peanuts", ["eggs", "shellfish"], list_allergies(5))
+Tests.equal_check("everything", ["eggs", "peanuts", "shellfish", "strawberries", "tomatoes", "chocolate", "pollen", "cats"], list_allergies(255))
+Tests.equal_check("ignores non-allergen score parts", ["eggs", "shellfish", "strawberries", "tomatoes", "chocolate", "pollen", "cats"], list_allergies(509))
+Tests.equal_check("ignores non-allergen score parts without highest valid score", ["eggs"], list_allergies(257))

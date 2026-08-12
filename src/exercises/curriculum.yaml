@@ -1,10 +1,64 @@
 chapters:
-  "Basics":
-      - hello_world
-      - fizz_buzz
-      # - lists
-      # - arrays
-      # - strings
+  "Intro":
+    - hello_world
 
-  # "More Concepts"
-  #     - reference_vs_value
+  "Array Operations":
+    - strain
+    - kindergarten_garden
+    - saddle_points
+    - poker
+
+  "Bitwise Operations":
+    - allergies
+    - variable_length_quantity
+
+  "Control Flow":
+    - queen_attack
+    - yacht
+    - swift_scheduling
+
+  "Graph Traversal":
+    - relative_distance
+    - two_bucket
+
+  "Grid Traversal":
+    - game_of_life
+    - state_of_tic_tac_toe
+    - rectangles
+
+  "Hash Maps":
+    - scrabble_score
+    - grade_school
+    - tournament
+
+  "Loops & Iteration":
+    - collatz_conjecture
+    - perfect_numbers
+
+  "Pointer Structures":
+    - simple_linked_list
+
+  "Recursion & Backtracking":
+    - killer_sudoku_helper
+    - book_store
+
+  "Stack & Parsing":
+    - matching_brackets
+    - wordy
+
+  "State Accumulation":
+    - clock
+    - robot_simulator
+    - bowling
+
+  "String Processing":
+    - acronym
+    - crypto_square
+    - run_length_encoding
+    - say
+    - ocr_numbers
+
+  "Tree Traversal":
+    - tree_building
+    - dot_dsl
+    - pov
