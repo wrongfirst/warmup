@@ -19,8 +19,10 @@ NOTE: Right now there is a CDN fetch step since native typescript (v7.0) does no
    - Maps diagnostic character and line offsets back to user editor line numbers.
 
 3. **Transpilation (Phase 2)**:
-   - Emits clean ES2022 JavaScript using `ts.transpileModule`.
+   - Emits ES2022 JavaScript using `ts.transpileModule` with `module: CommonJS` output.
+   - Using CommonJS (rather than ESNext) means the TypeScript compiler itself converts all `export function/class/const` declarations into plain `exports.x = x` assignments — no `export` keyword remains in the output, making it safe to execute inside `new Function()` which only accepts classic script bodies.
 
 4. **Execution (Phase 3)**:
-   - Executes the transpiled JavaScript in an isolated worker scope with intercepted console methods.
+   - Executes the JavaScript in an isolated worker scope with intercepted console methods.
+   - A dummy `exports` object is passed to absorb the CommonJS glue code; user functions are still declared in local scope and callable by name.
    - If type check errors were discovered in Phase 1, the execution result is marked as failed with detailed `[Type Error]` messages in the output.

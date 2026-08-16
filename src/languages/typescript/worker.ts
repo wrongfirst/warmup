@@ -29,6 +29,8 @@ async function loadTypeScriptCompiler(): Promise<any> {
   return (self as any).ts;
 }
 
+
+
 createWorkerHandler({
   async init() {
     ts = await loadTypeScriptCompiler();
@@ -143,12 +145,15 @@ createWorkerHandler({
     }
 
     // Phase 2: Transpile to JavaScript
+    // Using CommonJS module output so the TS compiler converts all `export` statements
+    // into `exports.x = x` assignments — no `export` keyword remains in the output,
+    // allowing safe execution inside new Function() which runs as a classic script body.
     let transpiledJs = '';
     try {
       const transpileResult = ts.transpileModule(combinedSource, {
         compilerOptions: {
           target: ts.ScriptTarget.ES2022,
-          module: ts.ModuleKind.ESNext,
+          module: ts.ModuleKind.CommonJS,
         },
       });
       transpiledJs = transpileResult.outputText;
@@ -161,9 +166,12 @@ createWorkerHandler({
     }
 
     // Phase 3: Execute in worker scope
+    // A dummy `exports` object is passed so the CommonJS boilerplate (exports.x = ...) does
+    // not throw a ReferenceError. The user's functions are also declared in local scope,
+    // so the test harness can call them directly by name.
     try {
-      const runnerFunc = new Function('console', transpiledJs);
-      runnerFunc(customConsole);
+      const runnerFunc = new Function('console', 'exports', transpiledJs);
+      runnerFunc(customConsole, {});
 
       const allOutput = [...diagnosticMessages, ...outputs].join('\n');
       const hasTypeErrors = diagnosticMessages.length > 0;
