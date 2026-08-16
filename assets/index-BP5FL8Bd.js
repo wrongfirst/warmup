@@ -2409,7 +2409,7 @@ func main() {
 	Tests.EqualCheck("punctuation", "FIFO", Abbreviate("First In, First Out"))
 	Tests.EqualCheck("all caps word", "GIMP", Abbreviate("GNU Image Manipulation Program"))
 	Tests.EqualCheck("hyphenated", "CMOS", Abbreviate("Complementary metal-oxide-semaphore"))
-	Tests.EqualCheck("consecutive delimiters", "SIMUFTA", Abbreviate("Something - I must have dreamt it or wept: a-footfall on the stair"))
+	Tests.EqualCheck("consecutive delimiters", "SIMUFTA", Abbreviate("Something - I made up from thin air"))
 }
 `,qn=`let identity s = s
 
@@ -2419,7 +2419,7 @@ let () =
   Tests.string_check identity "punctuation" "FIFO" (abbreviate "First In, First Out");
   Tests.string_check identity "all caps word" "GIMP" (abbreviate "GNU Image Manipulation Program");
   Tests.string_check identity "hyphenated" "CMOS" (abbreviate "Complementary metal-oxide-semaphore");
-  Tests.string_check identity "consecutive delimiters" "SIMUFTA" (abbreviate "Something - I must have dreamt it or wept: a-footfall on the stair")
+  Tests.string_check identity "consecutive delimiters" "SIMUFTA" (abbreviate "Something - I made up from thin air")
 `,Jn=`if 'abbreviate' not in globals():
     raise Exception("abbreviate function is not defined")
 
@@ -2428,7 +2428,7 @@ Tests.equal_check("lowercase words", "ROR", abbreviate("Ruby on Rails"))
 Tests.equal_check("punctuation", "FIFO", abbreviate("First In, First Out"))
 Tests.equal_check("all caps word", "GIMP", abbreviate("GNU Image Manipulation Program"))
 Tests.equal_check("hyphenated", "CMOS", abbreviate("Complementary metal-oxide-semaphore"))
-Tests.equal_check("consecutive delimiters", "SIMUFTA", abbreviate("Something - I must have dreamt it or wept: a-footfall on the stair"))
+Tests.equal_check("consecutive delimiters", "SIMUFTA", abbreviate("Something - I made up from thin air"))
 `,Yn=`// @ts-nocheck
 if (typeof parse !== "function") {
   throw new Error("parse function is not defined");
@@ -2439,7 +2439,7 @@ Tests.equalCheck("lowercase words", "ROR", parse("Ruby on Rails"));
 Tests.equalCheck("punctuation", "FIFO", parse("First In, First Out"));
 Tests.equalCheck("all caps word", "GIMP", parse("GNU Image Manipulation Program"));
 Tests.equalCheck("hyphenated", "CMOS", parse("Complementary metal-oxide-semaphore"));
-Tests.equalCheck("consecutive delimiters", "SIMUFTA", parse("Something - I must have dreamt it or wept: a-footfall on the stair"));
+Tests.equalCheck("consecutive delimiters", "SIMUFTA", parse("Something - I made up from thin air"));
 `,Xn=`package main
 
 import "fmt"
@@ -4890,7 +4890,7 @@ func main() {
 	Tests.EqualCheck("Ones", 3, Score([]int{1, 1, 1, 3, 5}, "ones"))
 	Tests.EqualCheck("Ones out of order", 3, Score([]int{3, 1, 1, 5, 1}, "ones"))
 	Tests.EqualCheck("No ones", 0, Score([]int{4, 3, 6, 5, 5}, "ones"))
-	Tests.EqualCheck("Twos", 10, Score([]int{2, 3, 4, 5, 6}, "twos"))
+	Tests.EqualCheck("Twos", 2, Score([]int{2, 3, 4, 5, 6}, "twos"))
 	Tests.EqualCheck("Four of a Kind", 12, Score([]int{3, 3, 3, 3, 5}, "four of a kind"))
 	Tests.EqualCheck("Four of a Kind from Yacht", 12, Score([]int{3, 3, 3, 3, 3}, "four of a kind"))
 	Tests.EqualCheck("Full House", 19, Score([]int{3, 3, 3, 5, 5}, "full house"))
@@ -4907,7 +4907,7 @@ let () =
   Tests.string_check string_of_int_val "Ones" 3 (score [1; 1; 1; 3; 5] "ones");
   Tests.string_check string_of_int_val "Ones out of order" 3 (score [3; 1; 1; 5; 1] "ones");
   Tests.string_check string_of_int_val "No ones" 0 (score [4; 3; 6; 5; 5] "ones");
-  Tests.string_check string_of_int_val "Twos" 10 (score [2; 3; 4; 5; 6] "twos");
+  Tests.string_check string_of_int_val "Twos" 2 (score [2; 3; 4; 5; 6] "twos");
   Tests.string_check string_of_int_val "Four of a Kind" 12 (score [3; 3; 3; 3; 5] "four of a kind");
   Tests.string_check string_of_int_val "Four of a Kind from Yacht" 12 (score [3; 3; 3; 3; 3] "four of a kind");
   Tests.string_check string_of_int_val "Full House" 19 (score [3; 3; 3; 5; 5] "full house");
@@ -4923,7 +4923,7 @@ Tests.equal_check("Not Yacht", 0, score([1, 3, 3, 2, 5], "yacht"))
 Tests.equal_check("Ones", 3, score([1, 1, 1, 3, 5], "ones"))
 Tests.equal_check("Ones out of order", 3, score([3, 1, 1, 5, 1], "ones"))
 Tests.equal_check("No ones", 0, score([4, 3, 6, 5, 5], "ones"))
-Tests.equal_check("Twos", 10, score([2, 3, 4, 5, 6], "twos"))
+Tests.equal_check("Twos", 2, score([2, 3, 4, 5, 6], "twos"))
 Tests.equal_check("Four of a Kind", 12, score([3, 3, 3, 3, 5], "four of a kind"))
 Tests.equal_check("Four of a Kind from Yacht", 12, score([3, 3, 3, 3, 3], "four of a kind"))
 Tests.equal_check("Full House", 19, score([3, 3, 3, 5, 5], "full house"))
@@ -4941,7 +4941,7 @@ Tests.equalCheck("Not Yacht", 0, score([1, 3, 3, 2, 5], "yacht"));
 Tests.equalCheck("Ones", 3, score([1, 1, 1, 3, 5], "ones"));
 Tests.equalCheck("Ones out of order", 3, score([3, 1, 1, 5, 1], "ones"));
 Tests.equalCheck("No ones", 0, score([4, 3, 6, 5, 5], "ones"));
-Tests.equalCheck("Twos", 10, score([2, 3, 4, 5, 6], "twos"));
+Tests.equalCheck("Twos", 2, score([2, 3, 4, 5, 6], "twos"));
 Tests.equalCheck("Four of a Kind", 12, score([3, 3, 3, 3, 5], "four of a kind"));
 Tests.equalCheck("Four of a Kind from Yacht", 12, score([3, 3, 3, 3, 3], "four of a kind"));
 Tests.equalCheck("Full House", 19, score([3, 3, 3, 5, 5], "full house"));
