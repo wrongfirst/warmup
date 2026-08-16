@@ -23,6 +23,8 @@ When accessing Warmup deployed over HTTPS (e.g. GitHub Pages), browsers block di
    # Ollama
    OLLAMA_ORIGINS="*" ollama serve
    ```
+   (some options like `llama-server` have `--cors` flag enabled by default)
+
 3. **Expose over HTTPS**:
    ```bash
    tailscale serve --bg 11434
