@@ -4,15 +4,15 @@ if (typeof Build !== "function") {
 }
 
 Tests.equalCheck("empty list", null, Build([]));
-Tests.equalCheck("one node", 0, Build([{ id: 0, parent: 0 }]).id);
+Tests.equalCheck("one node", 0, Build([{ id: 0, parent: 0 }])!.id);
 
 const tree = Build([
   { id: 0, parent: 0 },
   { id: 1, parent: 0 },
   { id: 2, parent: 0 },
 ]);
-Tests.equalCheck("root id", 0, tree.id);
-Tests.equalCheck("root children count", 2, tree.children.length);
+Tests.equalCheck("root id", 0, tree!.id);
+Tests.equalCheck("root children count", 2, tree!.children.length);
 
 let caught = false;
 try {
