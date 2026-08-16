@@ -3,6 +3,8 @@ import { elements } from '../core/elements';
 import { store, ChatSettings, ChatEndpoint } from '../core/store';
 import { updateEditorVimMode } from '../core/editor';
 import { ICONS } from './icons';
+import { abortAllStreams } from './chatPanel';
+import { showConfirmDialog } from './resetProgress';
 import siteConfig from '../../site.toml';
 
 let cachedModels: string[] = [];
@@ -22,6 +24,9 @@ export function initSettings() {
     }
     if (elements.settings.importBackupIcon) {
         elements.settings.importBackupIcon.innerHTML = ICONS.UPLOAD;
+    }
+    if (elements.settings.clearStorageIcon) {
+        elements.settings.clearStorageIcon.innerHTML = ICONS.TRASH;
     }
 
     // Bind static event listeners once
@@ -78,15 +83,19 @@ function bindStaticListeners() {
     // Chat toggle listener
     elements.settings.chatToggle?.addEventListener('change', (e) => {
         const enabled = (e.target as HTMLInputElement).checked;
+        if (enabled) {
+            isDetailsExpanded = true;
+        }
         store.getState().setChatSettings({ enabled });
         if (enabled) {
             elements.settings.chatFields?.classList.remove('hidden');
-            if (cachedModels.length === 0) {
+            if (cachedModels.length === 0 && store.getState().chatSettings.baseUrl) {
                 triggerModelFetch();
             }
         } else {
             elements.settings.chatFields?.classList.add('hidden');
         }
+        syncSettingsUI();
     });
 
     // Refresh Models button
@@ -107,21 +116,26 @@ function bindStaticListeners() {
     elements.settings.importBackupInput?.addEventListener('change', (e) => {
         handleImportBackup(e);
     });
+
+    // Clear / Nuke Local Storage button
+    elements.settings.clearStorageBtn?.addEventListener('click', () => {
+        handleClearLocalStorage();
+    });
 }
 
 function syncSettingsUI() {
     const isVimEnabled = store.getState().vimMode;
     const chatSettings = store.getState().chatSettings || {
         enabled: false,
-        baseUrl: 'https://api.openai.com/v1',
+        baseUrl: '',
         apiKey: '',
         model: '',
         selectedEndpointId: 'default-endpoint',
         endpoints: [
             {
                 id: 'default-endpoint',
-                name: 'OpenAI API',
-                baseUrl: 'https://api.openai.com/v1',
+                name: 'Endpoint 1',
+                baseUrl: '',
                 apiKey: '',
                 model: '',
             }
@@ -143,6 +157,7 @@ function syncSettingsUI() {
     renderEndpointSelector(chatSettings);
     renderKeyContainer(chatSettings);
     renderModelSelector(chatSettings);
+    updateStorageUsageDisplay();
 }
 
 function renderEndpointSelector(chatSettings: ChatSettings) {
@@ -151,7 +166,8 @@ function renderEndpointSelector(chatSettings: ChatSettings) {
     const endpoints = chatSettings.endpoints || [];
     const selectedId = chatSettings.selectedEndpointId;
     const currentEndpoint = endpoints.find(ep => ep.id === selectedId) || endpoints[0];
-    const canDelete = endpoints.length > 1;
+    const hasData = !!(currentEndpoint?.name?.trim() || currentEndpoint?.baseUrl?.trim() || currentEndpoint?.apiKey?.trim());
+    const canDelete = endpoints.length > 1 || hasData;
 
     elements.settings.endpointSection.innerHTML = `
         <div class="flex flex-col space-y-1.5">
@@ -401,11 +417,13 @@ function attachEndpointListeners() {
     // Delete endpoint button
     deleteBtn?.addEventListener('click', () => {
         const cs = store.getState().chatSettings;
-        if (cs.endpoints && cs.endpoints.length > 1) {
-            const updated = cs.endpoints.filter(ep => ep.id !== cs.selectedEndpointId);
+        const endpoints = cs.endpoints || [];
+        cachedModels = [];
+        modelFetchError = null;
+
+        if (endpoints.length > 1) {
+            const updated = endpoints.filter(ep => ep.id !== cs.selectedEndpointId);
             const nextSelected = updated[0];
-            cachedModels = [];
-            modelFetchError = null;
             store.getState().setChatSettings({
                 endpoints: updated,
                 selectedEndpointId: nextSelected.id,
@@ -417,6 +435,23 @@ function attachEndpointListeners() {
             if (nextSelected.baseUrl) {
                 triggerModelFetch();
             }
+        } else {
+            const resetEp: ChatEndpoint = {
+                id: 'default-endpoint',
+                name: '',
+                baseUrl: '',
+                apiKey: '',
+                model: '',
+            };
+            store.getState().setChatSettings({
+                endpoints: [resetEp],
+                selectedEndpointId: resetEp.id,
+                baseUrl: '',
+                apiKey: '',
+                model: '',
+            });
+            isDetailsExpanded = true;
+            syncSettingsUI();
         }
     });
 
@@ -728,11 +763,14 @@ async function fetchAvailableModels(baseUrl: string, apiKey: string): Promise<{ 
 }
 
 function openModal() {
+    const cs = store.getState().chatSettings;
+    if (cs.enabled && !cs.baseUrl) {
+        isDetailsExpanded = true;
+    }
     syncSettingsUI();
     elements.settings.modal?.classList.remove('hidden');
     elements.settings.modal?.classList.add('flex');
 
-    const cs = store.getState().chatSettings;
     if (cs.baseUrl && cachedModels.length === 0 && !isFetchingModels) {
         triggerModelFetch();
     }
@@ -902,6 +940,56 @@ async function handleImportBackup(e: Event) {
     } finally {
         input.value = '';
     }
+}
+
+function formatBytes(bytes: number, decimals = 1): string {
+    if (bytes <= 0) return '0 B';
+    const k = 1024;
+    const dm = decimals < 0 ? 0 : decimals;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    const formatted = parseFloat((bytes / Math.pow(k, i)).toFixed(dm));
+    return `${formatted} ${sizes[i] || 'B'}`;
+}
+
+export function calculateLocalStorageUsage(): { bytes: number; formatted: string } {
+    let totalBytes = 0;
+    try {
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key) {
+                const val = localStorage.getItem(key) || '';
+                // UTF-16 strings take ~2 bytes per character
+                totalBytes += (key.length + val.length) * 2;
+            }
+        }
+    } catch {
+        // Handle potential sandbox/quota restrictions
+    }
+    return {
+        bytes: totalBytes,
+        formatted: formatBytes(totalBytes),
+    };
+}
+
+function updateStorageUsageDisplay() {
+    if (elements.settings.storageUsageDisplay) {
+        const usage = calculateLocalStorageUsage();
+        elements.settings.storageUsageDisplay.textContent = `${usage.formatted} used`;
+    }
+}
+
+function handleClearLocalStorage() {
+    showConfirmDialog({
+        title: 'Nuke Local Storage',
+        message: 'Are you sure you want to delete all local storage? This will permanently wipe all your exercise progress, saved code, chat history, credentials, and settings. This action cannot be undone.',
+        confirmText: 'Nuke All Storage',
+        onConfirm: () => {
+            abortAllStreams();
+            localStorage.clear();
+            window.location.reload();
+        },
+    });
 }
 
 

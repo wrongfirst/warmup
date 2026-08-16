@@ -1,3 +1,7 @@
+# TD;DR
+- Use API keys with low billing and usage limits
+- For using local models, serve them over HTTPS
+
 ## API Key Security & Best Practices
 
 * Encryption at Rest: Keys are stored locally in the browser's `localStorage` and encrypted with AES-GCM (256-bit) via the Web Crypto API.
