@@ -1,0 +1,24 @@
+# Site Title & Subtitle
+title = "warmup"
+
+# Language Configuration
+default_language = "python"
+languages = ["typescript", "ocaml", "python", "go"]
+
+# URLs
+project_url = "https://github.com/jitinnair1/warmup"
+author_url = "https://github.com/jitinnair1"
+
+# Branding & Assets
+# `logo_emoji`: Emoji displayed in the header logo badge
+logo_emoji = "🎲"
+# `logo_image`: Path to optional image logo (uncomment to override logo_emoji)
+# logo_image = "/public/logo.png"
+
+# Meta & SEO
+headline = "wrongfirst.dev | warmup programming exercises and a bit more"
+description = "warmup exercises for programming syntax and concepts"
+keywords = "wrongfirst, programming, syntax, concepts"
+
+# Open Graph Preview Image (uncomment to enable)
+# og_image = "/public/og_preview.png"
