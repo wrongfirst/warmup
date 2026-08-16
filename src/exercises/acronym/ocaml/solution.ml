@@ -1,12 +1,24 @@
 let abbreviate phrase =
-  let cleaned =
-    phrase
-    |> Str.global_replace (Str.regexp "_") ""
-    |> Str.global_replace (Str.regexp "-") " "
+  let rec loop i in_word acc =
+    if i = String.length phrase then
+      (* We've reached the end. Reverse the accumulated chars, convert to strings, and join *)
+      acc |> List.rev |> List.map (String.make 1) |> String.concat ""
+    else
+      match phrase.[i] with
+      | '_' -> 
+          (* Ignore underscores completely (matches `global_replace "_" ""`) *)
+          loop (i + 1) in_word acc
+      | '-' | ' ' | '\t' | '\n' | '\r' | ',' | ':' -> 
+          (* These act as word boundaries (matches your hyphen replacement and regex split) *)
+          loop (i + 1) false acc
+      | c -> 
+          (* Regular characters *)
+          if in_word then
+            (* Already inside a word, just skip to the next character *)
+            loop (i + 1) true acc
+          else
+            (* First letter of a new word! Capitalize and add to our accumulator *)
+            let upper_c = Char.uppercase_ascii c in
+            loop (i + 1) true (upper_c :: acc)
   in
-  let words = Str.split (Str.regexp "[ \t\n\r,:]+") cleaned in
-  let first_letters = List.filter_map (fun w ->
-    if String.length w > 0 then Some (String.make 1 (Char.uppercase_ascii w.[0]))
-    else None
-  ) words in
-  String.concat "" first_letters
+  loop 0 false []

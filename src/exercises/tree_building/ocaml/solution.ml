@@ -4,8 +4,8 @@ type node = { id : int; children : node list }
 let build records =
   if records = [] then Ok None
   else
-    let sorted = List.sort (fun a b -> compare a.id b.id) records in
-    let root_rec = List.hd sorted in
+    let sorted = List.sort (fun (a : record) (b : record) -> compare a.id b.id) records in
+    let (root_rec : record) = List.hd sorted in
     if root_rec.id <> 0 || root_rec.parent <> 0 then Error "Root node is invalid"
     else
       let len = List.length sorted in
@@ -13,7 +13,7 @@ let build records =
       let valid = ref true in
       let err_msg = ref "" in
 
-      List.iteri (fun i rec_ ->
+      List.iteri (fun i (rec_ : record) ->
         if rec_.id <> i then (
           valid := false; err_msg := "Record id mismatch or non-contiguous"
         );
@@ -26,7 +26,7 @@ let build records =
       if not !valid then Error !err_msg
       else (
         let children_map = Hashtbl.create len in
-        List.iter (fun rec_ ->
+        List.iter (fun (rec_ : record) ->
           if rec_.id <> 0 then (
             let existing = try Hashtbl.find children_map rec_.parent with Not_found -> [] in
             Hashtbl.replace children_map rec_.parent (existing @ [rec_.id])

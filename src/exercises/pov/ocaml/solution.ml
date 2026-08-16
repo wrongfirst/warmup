@@ -1,51 +1,47 @@
-type tree = { value : string; children : tree list }
+type tree = {
+  value : string;
+  children : tree list;
+}
 
-let rec find_path target tr current_path =
-  let new_path = current_path @ [tr] in
-  if tr.value = target then Some new_path
+(* Finds a path of trees from the current root to a node with value `target` *)
+let rec path_from_self (target : string) (t : tree) : tree list option =
+  if t.value = target then
+    Some [t]
   else
-    let rec aux = function
+    let rec search = function
       | [] -> None
       | child :: rest ->
-          (match find_path target child new_path with
-           | Some p -> Some p
-           | None -> aux rest)
+          match path_from_self target child with
+          | Some path -> Some (t :: path)
+          | None -> search rest
     in
-    aux tr.children
+    search t.children
 
-let from_pov target tr =
-  match find_path target tr [] with
+(* Re-parents the tree from the perspective of `from_node` *)
+let from_pov (from_node : string) (root : tree) : tree option =
+  match path_from_self from_node root with
   | None -> None
-  | Some path ->
-      let new_child = ref None in
-      let path_arr = Array.of_list path in
-      let len = Array.length path_arr in
-
-      for i = 0 to len - 1 do
-        let node = path_arr.(i) in
-        let next_on_path = if i + 1 < len then Some path_arr.(i + 1) else None in
-
-        let remaining = List.filter (fun c ->
-          match next_on_path with
-          | Some next_n -> c.value <> next_n.value
-          | None -> true
-        ) node.children in
-
-        let updated_children =
-          match !new_child with
-          | Some child -> remaining @ [child]
-          | None -> remaining
+  | Some [] -> None
+  | Some (head :: rest) ->
+      (* 
+        Iterate through the path, flipping the parent-child direction.
+        `reparent acc child` adds the previous parent (with the child removed)
+        to the current child's children list.
+      *)
+      let reparent acc child =
+        let remaining_children =
+          List.filter (fun c -> c.value <> child.value) acc.children
         in
+        let updated_parent = { acc with children = remaining_children } in
+        { child with children = updated_parent :: child.children }
+      in
+      Some (List.fold_left reparent head rest)
 
-        new_child := Some { value = node.value; children = updated_children }
-      done;
-
-      !new_child
-
-let path_to from_node to_node tr =
-  match from_pov from_node tr with
+(* Finds the path of node labels from `from_node` to `to_node` *)
+let path_to (from_node : string) (to_node : string) (root : tree) : string list option =
+  match from_pov from_node root with
   | None -> None
-  | Some reparented ->
-      (match find_path to_node reparented [] with
-       | None -> None
-       | Some path_nodes -> Some (List.map (fun n -> n.value) path_nodes))
+  | Some new_root ->
+      match path_from_self to_node new_root with
+      | None -> None
+      | Some path -> Some (List.map (fun t -> t.value) path)
