@@ -2589,38 +2589,69 @@ func play(rolls []int) (*Game, error) {
 	return g, nil
 }
 
-func main() {
-	g1, _ := play(repeat(0, 20))
-	s1, _ := g1.Score()
-	Tests.EqualCheck("gutter game", 0, s1)
-
-	g2, _ := play(repeat(1, 20))
-	s2, _ := g2.Score()
-	Tests.EqualCheck("all ones", 20, s2)
-
-	g3, _ := play(append([]int{5, 5, 3}, repeat(0, 17)...))
-	s3, _ := g3.Score()
-	Tests.EqualCheck("one spare", 22, s3)
-
-	g4, _ := play(append([]int{10, 3, 5}, repeat(0, 16)...))
-	s4, _ := g4.Score()
-	Tests.EqualCheck("one strike", 26, s4)
-
-	g5, _ := play(repeat(10, 12))
-	s5, _ := g5.Score()
-	Tests.EqualCheck("perfect game", 300, s5)
-
-	g6, _ := play([]int{0, 0})
-	_, err6 := g6.Score()
-	Tests.BoolCheck("incomplete game score is error", err6 != nil)
+func score(rolls []int) int {
+	g, err := play(rolls)
+	if err != nil {
+		return -1
+	}
+	s, err := g.Score()
+	if err != nil {
+		return -1
+	}
+	return s
 }
 
-func repeat(val, count int) []int {
-	res := make([]int, count)
-	for i := range res {
-		res[i] = val
+func rollError(previousRolls []int, r int) bool {
+	g, err := play(previousRolls)
+	if err != nil {
+		return true
 	}
-	return res
+	return g.Roll(r) != nil
+}
+
+func scoreError(rolls []int) bool {
+	g, err := play(rolls)
+	if err != nil {
+		return true
+	}
+	_, err = g.Score()
+	return err != nil
+}
+
+func main() {
+	Tests.EqualCheck("should be able to score a game with all zeros", 0, score([]int{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}))
+	Tests.EqualCheck("should be able to score a game with no strikes or spares", 90, score([]int{3, 6, 3, 6, 3, 6, 3, 6, 3, 6, 3, 6, 3, 6, 3, 6, 3, 6, 3, 6}))
+	Tests.EqualCheck("a spare followed by zeros is worth ten points", 10, score([]int{6, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}))
+	Tests.EqualCheck("points scored in the roll after a spare are counted twice", 16, score([]int{6, 4, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}))
+	Tests.EqualCheck("consecutive spares each get a one roll bonus", 31, score([]int{5, 5, 3, 7, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}))
+	Tests.EqualCheck("a spare in the last frame gets a one roll bonus that is counted once", 17, score([]int{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 3, 7}))
+	Tests.EqualCheck("a strike earns ten points in a frame with a single roll", 10, score([]int{10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}))
+	Tests.EqualCheck("points scored in the two rolls after a strike are counted twice as a bonus", 26, score([]int{10, 5, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}))
+	Tests.EqualCheck("consecutive strikes each get the two roll bonus", 81, score([]int{10, 10, 10, 5, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}))
+	Tests.EqualCheck("a strike in the last frame gets a two roll bonus that is counted once", 18, score([]int{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 7, 1}))
+	Tests.EqualCheck("rolling a spare with the two roll bonus does not get a bonus roll", 20, score([]int{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 7, 3}))
+	Tests.EqualCheck("strikes with the two roll bonus do not get bonus rolls", 30, score([]int{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 10, 10}))
+	Tests.EqualCheck("last two strikes followed by only last bonus with non strike points", 31, score([]int{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 10, 0, 1}))
+	Tests.EqualCheck("a strike with the one roll bonus after a spare in the last frame does not get a bonus", 20, score([]int{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 3, 10}))
+	Tests.EqualCheck("all strikes is a perfect game", 300, score([]int{10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10}))
+	Tests.EqualCheck("two bonus rolls after a strike in the last frame can score more than 10 points if one is a strike", 26, score([]int{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 10, 6}))
+
+	Tests.BoolCheck("rolls cannot score negative points", rollError([]int{}, -1))
+	Tests.BoolCheck("a roll cannot score more than 10 points", rollError([]int{}, 11))
+	Tests.BoolCheck("two rolls in a frame cannot score more than 10 points", rollError([]int{5}, 6))
+	Tests.BoolCheck("bonus roll after a strike in the last frame cannot score more than 10 points", rollError([]int{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10}, 11))
+	Tests.BoolCheck("two bonus rolls after a strike in the last frame cannot score more than 10 points", rollError([]int{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 5}, 6))
+	Tests.BoolCheck("the second bonus rolls after a strike in the last frame cannot be a strike if the first one is not a strike", rollError([]int{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 6}, 10))
+	Tests.BoolCheck("second bonus roll after a strike in the last frame cannot score more than 10 points", rollError([]int{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 10}, 11))
+	Tests.BoolCheck("cannot roll if game already has ten frames", rollError([]int{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, 0))
+	Tests.BoolCheck("cannot roll after bonus roll for spare", rollError([]int{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 3, 2}, 2))
+	Tests.BoolCheck("cannot roll after bonus rolls for strike", rollError([]int{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 3, 2}, 2))
+
+	Tests.BoolCheck("an unstarted game cannot be scored", scoreError([]int{}))
+	Tests.BoolCheck("an incomplete game cannot be scored", scoreError([]int{0, 0}))
+	Tests.BoolCheck("bonus rolls for a strike in the last frame must be rolled before score can be calculated", scoreError([]int{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10}))
+	Tests.BoolCheck("both bonus rolls for a strike in the last frame must be rolled before score can be calculated", scoreError([]int{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 10}))
+	Tests.BoolCheck("bonus roll for a spare in the last frame must be rolled before score can be calculated", scoreError([]int{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 3}))
 }
 `,ar=`let string_of_res = function
   | Ok n -> Printf.sprintf "Ok %d" n
@@ -2635,17 +2666,40 @@ let play_game rolls =
   ) rolls;
   !g
 
-let repeat val_ v_count =
-  let rec aux acc n = if n <= 0 then acc else aux (val_ :: acc) (n - 1) in
-  aux [] v_count
-
 let () =
-  Tests.string_check string_of_res "gutter game" (Ok 0) (score (play_game (repeat 0 20)));
-  Tests.string_check string_of_res "all ones" (Ok 20) (score (play_game (repeat 1 20)));
-  Tests.string_check string_of_res "one spare" (Ok 22) (score (play_game ([5; 5; 3] @ repeat 0 17)));
-  Tests.string_check string_of_res "one strike" (Ok 26) (score (play_game ([10; 3; 5] @ repeat 0 16)));
-  Tests.string_check string_of_res "perfect game" (Ok 300) (score (play_game (repeat 10 12)));
-  Tests.bool_check "incomplete game score is error" (match score (play_game [0; 0]) with Error _ -> true | _ -> false)
+  Tests.string_check string_of_res "should be able to score a game with all zeros" (Ok 0) (score (play_game [0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0]));
+  Tests.string_check string_of_res "should be able to score a game with no strikes or spares" (Ok 90) (score (play_game [3; 6; 3; 6; 3; 6; 3; 6; 3; 6; 3; 6; 3; 6; 3; 6; 3; 6; 3; 6]));
+  Tests.string_check string_of_res "a spare followed by zeros is worth ten points" (Ok 10) (score (play_game [6; 4; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0]));
+  Tests.string_check string_of_res "points scored in the roll after a spare are counted twice" (Ok 16) (score (play_game [6; 4; 3; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0]));
+  Tests.string_check string_of_res "consecutive spares each get a one roll bonus" (Ok 31) (score (play_game [5; 5; 3; 7; 4; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0]));
+  Tests.string_check string_of_res "a spare in the last frame gets a one roll bonus that is counted once" (Ok 17) (score (play_game [0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 7; 3; 7]));
+  Tests.string_check string_of_res "a strike earns ten points in a frame with a single roll" (Ok 10) (score (play_game [10; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0]));
+  Tests.string_check string_of_res "points scored in the two rolls after a strike are counted twice as a bonus" (Ok 26) (score (play_game [10; 5; 3; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0]));
+  Tests.string_check string_of_res "consecutive strikes each get the two roll bonus" (Ok 81) (score (play_game [10; 10; 10; 5; 3; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0]));
+  Tests.string_check string_of_res "a strike in the last frame gets a two roll bonus that is counted once" (Ok 18) (score (play_game [0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 10; 7; 1]));
+  Tests.string_check string_of_res "rolling a spare with the two roll bonus does not get a bonus roll" (Ok 20) (score (play_game [0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 10; 7; 3]));
+  Tests.string_check string_of_res "strikes with the two roll bonus do not get bonus rolls" (Ok 30) (score (play_game [0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 10; 10; 10]));
+  Tests.string_check string_of_res "last two strikes followed by only last bonus with non strike points" (Ok 31) (score (play_game [0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 10; 10; 0; 1]));
+  Tests.string_check string_of_res "a strike with the one roll bonus after a spare in the last frame does not get a bonus" (Ok 20) (score (play_game [0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 7; 3; 10]));
+  Tests.string_check string_of_res "all strikes is a perfect game" (Ok 300) (score (play_game [10; 10; 10; 10; 10; 10; 10; 10; 10; 10; 10; 10]));
+  Tests.string_check string_of_res "two bonus rolls after a strike in the last frame can score more than 10 points if one is a strike" (Ok 26) (score (play_game [0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 10; 10; 6]));
+
+  Tests.bool_check "rolls cannot score negative points" (match roll (-1) (play_game []) with Error _ -> true | _ -> false);
+  Tests.bool_check "a roll cannot score more than 10 points" (match roll 11 (play_game []) with Error _ -> true | _ -> false);
+  Tests.bool_check "two rolls in a frame cannot score more than 10 points" (match roll 6 (play_game [5]) with Error _ -> true | _ -> false);
+  Tests.bool_check "bonus roll after a strike in the last frame cannot score more than 10 points" (match roll 11 (play_game [0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 10]) with Error _ -> true | _ -> false);
+  Tests.bool_check "two bonus rolls after a strike in the last frame cannot score more than 10 points" (match roll 6 (play_game [0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 10; 5]) with Error _ -> true | _ -> false);
+  Tests.bool_check "the second bonus rolls after a strike in the last frame cannot be a strike if the first one is not a strike" (match roll 10 (play_game [0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 10; 6]) with Error _ -> true | _ -> false);
+  Tests.bool_check "second bonus roll after a strike in the last frame cannot score more than 10 points" (match roll 11 (play_game [0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 10; 10]) with Error _ -> true | _ -> false);
+  Tests.bool_check "cannot roll if game already has ten frames" (match roll 0 (play_game [0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0]) with Error _ -> true | _ -> false);
+  Tests.bool_check "cannot roll after bonus roll for spare" (match roll 2 (play_game [0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 7; 3; 2]) with Error _ -> true | _ -> false);
+  Tests.bool_check "cannot roll after bonus rolls for strike" (match roll 2 (play_game [0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 10; 3; 2]) with Error _ -> true | _ -> false);
+
+  Tests.bool_check "an unstarted game cannot be scored" (match score (play_game []) with Error _ -> true | _ -> false);
+  Tests.bool_check "an incomplete game cannot be scored" (match score (play_game [0; 0]) with Error _ -> true | _ -> false);
+  Tests.bool_check "bonus rolls for a strike in the last frame must be rolled before score can be calculated" (match score (play_game [0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 10]) with Error _ -> true | _ -> false);
+  Tests.bool_check "both bonus rolls for a strike in the last frame must be rolled before score can be calculated" (match score (play_game [0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 10; 10]) with Error _ -> true | _ -> false);
+  Tests.bool_check "bonus roll for a spare in the last frame must be rolled before score can be calculated" (match score (play_game [0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 7; 3]) with Error _ -> true | _ -> false)
 `,or=`if 'BowlingGame' not in globals():
     raise Exception("BowlingGame class is not defined")
 
@@ -2655,18 +2709,56 @@ def play(rolls):
         g.roll(r)
     return g
 
-Tests.equal_check("gutter game", 0, play([0]*20).score())
-Tests.equal_check("all ones", 20, play([1]*20).score())
-Tests.equal_check("one spare", 22, play([5, 5, 3] + [0]*17).score())
-Tests.equal_check("one strike", 26, play([10, 3, 5] + [0]*16).score())
-Tests.equal_check("perfect game", 300, play([10]*12).score())
+def can_roll(rolls, pin):
+    try:
+        play(rolls).roll(pin)
+        return False
+    except (ValueError, Exception):
+        return True
 
-caught = False
-try:
-    play([0, 0]).score()
-except ValueError:
-    caught = True
-Tests.bool_check("incomplete game score is error", caught)
+def score_err(rolls):
+    try:
+        play(rolls).score()
+        return False
+    except (ValueError, Exception):
+        return True
+
+# Score tests
+Tests.equal_check("should be able to score a game with all zeros", 0, play([0] * 20).score())
+Tests.equal_check("should be able to score a game with no strikes or spares", 90, play([3, 6] * 10).score())
+Tests.equal_check("a spare followed by zeros is worth ten points", 10, play([6, 4] + [0] * 18).score())
+Tests.equal_check("points scored in the roll after a spare are counted twice", 16, play([6, 4, 3] + [0] * 17).score())
+Tests.equal_check("consecutive spares each get a one roll bonus", 31, play([5, 5, 3, 7, 4] + [0] * 15).score())
+Tests.equal_check("a spare in the last frame gets a one roll bonus that is counted once", 17, play([0] * 18 + [7, 3, 7]).score())
+Tests.equal_check("a strike earns ten points in a frame with a single roll", 10, play([10] + [0] * 18).score())
+Tests.equal_check("points scored in the two rolls after a strike are counted twice as a bonus", 26, play([10, 5, 3] + [0] * 16).score())
+Tests.equal_check("consecutive strikes each get the two roll bonus", 81, play([10, 10, 10, 5, 3] + [0] * 12).score())
+Tests.equal_check("a strike in the last frame gets a two roll bonus that is counted once", 18, play([0] * 18 + [10, 7, 1]).score())
+Tests.equal_check("rolling a spare with the two roll bonus does not get a bonus roll", 20, play([0] * 18 + [10, 7, 3]).score())
+Tests.equal_check("strikes with the two roll bonus do not get bonus rolls", 30, play([0] * 18 + [10, 10, 10]).score())
+Tests.equal_check("last two strikes followed by only last bonus with non strike points", 31, play([0] * 16 + [10, 10, 0, 1]).score())
+Tests.equal_check("a strike with the one roll bonus after a spare in the last frame does not get a bonus", 20, play([0] * 18 + [7, 3, 10]).score())
+Tests.equal_check("all strikes is a perfect game", 300, play([10] * 12).score())
+Tests.equal_check("two bonus rolls after a strike in the last frame can score more than 10 points if one is a strike", 26, play([0] * 18 + [10, 10, 6]).score())
+
+# Roll error tests
+Tests.bool_check("rolls cannot score negative points", can_roll([], -1))
+Tests.bool_check("a roll cannot score more than 10 points", can_roll([], 11))
+Tests.bool_check("two rolls in a frame cannot score more than 10 points", can_roll([5], 6))
+Tests.bool_check("bonus roll after a strike in the last frame cannot score more than 10 points", can_roll([0] * 18 + [10], 11))
+Tests.bool_check("two bonus rolls after a strike in the last frame cannot score more than 10 points", can_roll([0] * 18 + [10, 5], 6))
+Tests.bool_check("the second bonus rolls after a strike in the last frame cannot be a strike if the first one is not a strike", can_roll([0] * 18 + [10, 6], 10))
+Tests.bool_check("second bonus roll after a strike in the last frame cannot score more than 10 points", can_roll([0] * 18 + [10, 10], 11))
+Tests.bool_check("cannot roll if game already has ten frames", can_roll([0] * 20, 0))
+Tests.bool_check("cannot roll after bonus roll for spare", can_roll([0] * 18 + [7, 3, 2], 2))
+Tests.bool_check("cannot roll after bonus rolls for strike", can_roll([0] * 18 + [10, 3, 2], 2))
+
+# Score error tests
+Tests.bool_check("an unstarted game cannot be scored", score_err([]))
+Tests.bool_check("an incomplete game cannot be scored", score_err([0, 0]))
+Tests.bool_check("bonus rolls for a strike in the last frame must be rolled before score can be calculated", score_err([0] * 18 + [10]))
+Tests.bool_check("both bonus rolls for a strike in the last frame must be rolled before score can be calculated", score_err([0] * 18 + [10, 10]))
+Tests.bool_check("bonus roll for a spare in the last frame must be rolled before score can be calculated", score_err([0] * 18 + [7, 3]))
 `,sr=`// @ts-nocheck
 if (typeof Bowling !== "function") {
   throw new Error("Bowling class is not defined");
@@ -2680,12 +2772,60 @@ function play(rolls: number[]): Bowling {
   return g;
 }
 
-Tests.equalCheck("gutter game", 0, play(Array(20).fill(0)).score());
-Tests.equalCheck("all ones", 20, play(Array(20).fill(1)).score());
-Tests.equalCheck("one spare", 22, play([5, 5, 3, ...Array(17).fill(0)]).score());
-Tests.equalCheck("one strike", 26, play([10, 3, 5, ...Array(16).fill(0)]).score());
-Tests.equalCheck("perfect game", 300, play(Array(12).fill(10)).score());
-Tests.boolCheck("incomplete game score is error", typeof play([0, 0]).score() === "object");
+function canRoll(rolls: number[], roll: number): boolean {
+  try {
+    play(rolls).roll(roll);
+    return false;
+  } catch {
+    return true;
+  }
+}
+
+function scoreErr(rolls: number[]): boolean {
+  try {
+    const res = play(rolls).score();
+    return typeof res === "object" && res !== null && "error" in res;
+  } catch {
+    return true;
+  }
+}
+
+// Score tests
+Tests.equalCheck("should be able to score a game with all zeros", 0, play(Array(20).fill(0)).score());
+Tests.equalCheck("should be able to score a game with no strikes or spares", 90, play([3, 6, 3, 6, 3, 6, 3, 6, 3, 6, 3, 6, 3, 6, 3, 6, 3, 6, 3, 6]).score());
+Tests.equalCheck("a spare followed by zeros is worth ten points", 10, play([6, 4, ...Array(18).fill(0)]).score());
+Tests.equalCheck("points scored in the roll after a spare are counted twice", 16, play([6, 4, 3, ...Array(17).fill(0)]).score());
+Tests.equalCheck("consecutive spares each get a one roll bonus", 31, play([5, 5, 3, 7, 4, ...Array(15).fill(0)]).score());
+Tests.equalCheck("a spare in the last frame gets a one roll bonus that is counted once", 17, play([...Array(18).fill(0), 7, 3, 7]).score());
+Tests.equalCheck("a strike earns ten points in a frame with a single roll", 10, play([10, ...Array(18).fill(0)]).score());
+Tests.equalCheck("points scored in the two rolls after a strike are counted twice as a bonus", 26, play([10, 5, 3, ...Array(16).fill(0)]).score());
+Tests.equalCheck("consecutive strikes each get the two roll bonus", 81, play([10, 10, 10, 5, 3, ...Array(12).fill(0)]).score());
+Tests.equalCheck("a strike in the last frame gets a two roll bonus that is counted once", 18, play([...Array(18).fill(0), 10, 7, 1]).score());
+Tests.equalCheck("rolling a spare with the two roll bonus does not get a bonus roll", 20, play([...Array(18).fill(0), 10, 7, 3]).score());
+Tests.equalCheck("strikes with the two roll bonus do not get bonus rolls", 30, play([...Array(18).fill(0), 10, 10, 10]).score());
+Tests.equalCheck("last two strikes followed by only last bonus with non strike points", 31, play([...Array(16).fill(0), 10, 10, 0, 1]).score());
+Tests.equalCheck("a strike with the one roll bonus after a spare in the last frame does not get a bonus", 20, play([...Array(18).fill(0), 7, 3, 10]).score());
+Tests.equalCheck("all strikes is a perfect game", 300, play(Array(12).fill(10)).score());
+Tests.equalCheck("two bonus rolls after a strike in the last frame can score more than 10 points if one is a strike", 26, play([...Array(18).fill(0), 10, 10, 6]).score());
+
+// Roll error tests
+Tests.boolCheck("rolls cannot score negative points", canRoll([], -1));
+Tests.boolCheck("a roll cannot score more than 10 points", canRoll([], 11));
+Tests.boolCheck("two rolls in a frame cannot score more than 10 points", canRoll([5], 6));
+Tests.boolCheck("bonus roll after a strike in the last frame cannot score more than 10 points", canRoll([...Array(18).fill(0), 10], 11));
+Tests.boolCheck("two bonus rolls after a strike in the last frame cannot score more than 10 points", canRoll([...Array(18).fill(0), 10, 5], 6));
+Tests.boolCheck("the second bonus rolls after a strike in the last frame cannot be a strike if the first one is not a strike", canRoll([...Array(18).fill(0), 10, 6], 10));
+Tests.boolCheck("second bonus roll after a strike in the last frame cannot score more than 10 points", canRoll([...Array(18).fill(0), 10, 10], 11));
+Tests.boolCheck("cannot roll if game already has ten frames", canRoll(Array(20).fill(0), 0));
+Tests.boolCheck("cannot roll after bonus roll for spare", canRoll([...Array(18).fill(0), 7, 3, 2], 2));
+Tests.boolCheck("cannot roll after bonus rolls for strike", canRoll([...Array(18).fill(0), 10, 3, 2], 2));
+
+// Score error tests
+Tests.boolCheck("an unstarted game cannot be scored", scoreErr([]));
+Tests.boolCheck("an incomplete game cannot be scored", scoreErr([0, 0]));
+Tests.boolCheck("bonus rolls for a strike in the last frame must be rolled before score can be calculated", scoreErr([...Array(18).fill(0), 10]));
+Tests.boolCheck("both bonus rolls for a strike in the last frame must be rolled before score can be calculated", scoreErr([...Array(18).fill(0), 10, 10]));
+Tests.boolCheck("bonus roll for a spare in the last frame must be rolled before score can be calculated", scoreErr([...Array(18).fill(0), 7, 3]));
 `,cr=`package main
 
 func main() {
@@ -3938,49 +4078,69 @@ Tests.equalCheck("at 7,3 facing north evaluate RAALAL bearing", "west", robot2.b
 
 func main() {
 	Tests.EqualCheck("encode empty string", "", Encode(""))
-	Tests.EqualCheck("encode single characters without count", "XYZ", Encode("XYZ"))
-	Tests.EqualCheck("encode string with repeated characters", "2A3B4C", Encode("AABBBCCCC"))
-	Tests.EqualCheck("encode multiple whitespace", "2 hs2q q2w", Encode("  hs  q q  w"))
+	Tests.EqualCheck("encode single characters only are encoded without count", "XYZ", Encode("XYZ"))
+	Tests.EqualCheck("encode string with no single characters", "2A3B4C", Encode("AABBBCCCC"))
+	Tests.EqualCheck("encode single characters mixed with repeated characters", "12WB12W3B24WB", Encode("WWWWWWWWWWWWBWWWWWWWWWWWWBBBWWWWWWWWWWWWWWWWWWWWWWWWB"))
+	Tests.EqualCheck("encode multiple whitespace mixed in string", "2 hs2q q2w2 ", Encode("  hsqq qww  "))
+	Tests.EqualCheck("encode lowercase characters", "2a3b4c", Encode("aabbbcccc"))
 	Tests.EqualCheck("decode empty string", "", Decode(""))
-	Tests.EqualCheck("decode single characters without count", "XYZ", Decode("XYZ"))
-	Tests.EqualCheck("decode string with repeated characters", "AABBBCCCC", Decode("2A3B4C"))
-	Tests.EqualCheck("encode and then decode", "zzz ZZ zZ", Decode(Encode("zzz ZZ zZ")))
+	Tests.EqualCheck("decode single characters only", "XYZ", Decode("XYZ"))
+	Tests.EqualCheck("decode string with no single characters", "AABBBCCCC", Decode("2A3B4C"))
+	Tests.EqualCheck("decode single characters with repeated characters", "WWWWWWWWWWWWBWWWWWWWWWWWWBBBWWWWWWWWWWWWWWWWWWWWWWWWB", Decode("12WB12W3B24WB"))
+	Tests.EqualCheck("decode multiple whitespace mixed in string", "  hsqq qww  ", Decode("2 hs2q q2w2 "))
+	Tests.EqualCheck("decode lowercase string", "aabbbcccc", Decode("2a3b4c"))
+	Tests.EqualCheck("encode followed by decode gives original string", "zzz ZZ  zZ", Decode(Encode("zzz ZZ  zZ")))
 }
 `,ji=`let identity s = s
 
 let () =
   Tests.string_check identity "encode empty string" "" (encode "");
-  Tests.string_check identity "encode single characters without count" "XYZ" (encode "XYZ");
-  Tests.string_check identity "encode string with repeated characters" "2A3B4C" (encode "AABBBCCCC");
-  Tests.string_check identity "encode multiple whitespace" "2 hs2q q2w" (encode "  hs  q q  w");
+  Tests.string_check identity "encode single characters only are encoded without count" "XYZ" (encode "XYZ");
+  Tests.string_check identity "encode string with no single characters" "2A3B4C" (encode "AABBBCCCC");
+  Tests.string_check identity "encode single characters mixed with repeated characters" "12WB12W3B24WB" (encode "WWWWWWWWWWWWBWWWWWWWWWWWWBBBWWWWWWWWWWWWWWWWWWWWWWWWB");
+  Tests.string_check identity "encode multiple whitespace mixed in string" "2 hs2q q2w2 " (encode "  hsqq qww  ");
+  Tests.string_check identity "encode lowercase characters" "2a3b4c" (encode "aabbbcccc");
   Tests.string_check identity "decode empty string" "" (decode "");
-  Tests.string_check identity "decode single characters without count" "XYZ" (decode "XYZ");
-  Tests.string_check identity "decode string with repeated characters" "AABBBCCCC" (decode "2A3B4C");
-  Tests.string_check identity "encode and then decode" "zzz ZZ zZ" (decode (encode "zzz ZZ zZ"))
+  Tests.string_check identity "decode single characters only" "XYZ" (decode "XYZ");
+  Tests.string_check identity "decode string with no single characters" "AABBBCCCC" (decode "2A3B4C");
+  Tests.string_check identity "decode single characters with repeated characters" "WWWWWWWWWWWWBWWWWWWWWWWWWBBBWWWWWWWWWWWWWWWWWWWWWWWWB" (decode "12WB12W3B24WB");
+  Tests.string_check identity "decode multiple whitespace mixed in string" "  hsqq qww  " (decode "2 hs2q q2w2 ");
+  Tests.string_check identity "decode lowercase string" "aabbbcccc" (decode "2a3b4c");
+  Tests.string_check identity "encode followed by decode gives original string" "zzz ZZ  zZ" (decode (encode "zzz ZZ  zZ"))
 `,Mi=`if 'encode' not in globals() or 'decode' not in globals():
     raise Exception("encode/decode function is not defined")
 
 Tests.equal_check("encode empty string", "", encode(""))
-Tests.equal_check("encode single characters without count", "XYZ", encode("XYZ"))
-Tests.equal_check("encode string with repeated characters", "2A3B4C", encode("AABBBCCCC"))
-Tests.equal_check("encode multiple whitespace", "2 hs2q q2w", encode("  hs  q q  w"))
+Tests.equal_check("encode single characters only are encoded without count", "XYZ", encode("XYZ"))
+Tests.equal_check("encode string with no single characters", "2A3B4C", encode("AABBBCCCC"))
+Tests.equal_check("encode single characters mixed with repeated characters", "12WB12W3B24WB", encode("WWWWWWWWWWWWBWWWWWWWWWWWWBBBWWWWWWWWWWWWWWWWWWWWWWWWB"))
+Tests.equal_check("encode multiple whitespace mixed in string", "2 hs2q q2w2 ", encode("  hsqq qww  "))
+Tests.equal_check("encode lowercase characters", "2a3b4c", encode("aabbbcccc"))
 Tests.equal_check("decode empty string", "", decode(""))
-Tests.equal_check("decode single characters without count", "XYZ", decode("XYZ"))
-Tests.equal_check("decode string with repeated characters", "AABBBCCCC", decode("2A3B4C"))
-Tests.equal_check("encode and then decode", "zzz ZZ zZ", decode(encode("zzz ZZ zZ")))
+Tests.equal_check("decode single characters only", "XYZ", decode("XYZ"))
+Tests.equal_check("decode string with no single characters", "AABBBCCCC", decode("2A3B4C"))
+Tests.equal_check("decode single characters with repeated characters", "WWWWWWWWWWWWBWWWWWWWWWWWWBBBWWWWWWWWWWWWWWWWWWWWWWWWB", decode("12WB12W3B24WB"))
+Tests.equal_check("decode multiple whitespace mixed in string", "  hsqq qww  ", decode("2 hs2q q2w2 "))
+Tests.equal_check("decode lowercase string", "aabbbcccc", decode("2a3b4c"))
+Tests.equal_check("encode followed by decode gives original string", "zzz ZZ  zZ", decode(encode("zzz ZZ  zZ")))
 `,Ni=`// @ts-nocheck
 if (typeof encode !== "function" || typeof decode !== "function") {
   throw new Error("encode/decode function is not defined");
 }
 
 Tests.equalCheck("encode empty string", "", encode(""));
-Tests.equalCheck("encode single characters without count", "XYZ", encode("XYZ"));
-Tests.equalCheck("encode string with repeated characters", "2A3B4C", encode("AABBBCCCC"));
-Tests.equalCheck("encode multiple whitespace", "2 hs2q q2w", encode("  hs  q q  w"));
+Tests.equalCheck("encode single characters only are encoded without count", "XYZ", encode("XYZ"));
+Tests.equalCheck("encode string with no single characters", "2A3B4C", encode("AABBBCCCC"));
+Tests.equalCheck("encode single characters mixed with repeated characters", "12WB12W3B24WB", encode("WWWWWWWWWWWWBWWWWWWWWWWWWBBBWWWWWWWWWWWWWWWWWWWWWWWWB"));
+Tests.equalCheck("encode multiple whitespace mixed in string", "2 hs2q q2w2 ", encode("  hsqq qww  "));
+Tests.equalCheck("encode lowercase characters", "2a3b4c", encode("aabbbcccc"));
 Tests.equalCheck("decode empty string", "", decode(""));
-Tests.equalCheck("decode single characters without count", "XYZ", decode("XYZ"));
-Tests.equalCheck("decode string with repeated characters", "AABBBCCCC", decode("2A3B4C"));
-Tests.equalCheck("encode and then decode", "zzz ZZ zZ", decode(encode("zzz ZZ zZ")));
+Tests.equalCheck("decode single characters only", "XYZ", decode("XYZ"));
+Tests.equalCheck("decode string with no single characters", "AABBBCCCC", decode("2A3B4C"));
+Tests.equalCheck("decode single characters with repeated characters", "WWWWWWWWWWWWBWWWWWWWWWWWWBBBWWWWWWWWWWWWWWWWWWWWWWWWB", decode("12WB12W3B24WB"));
+Tests.equalCheck("decode multiple whitespace mixed in string", "  hsqq qww  ", decode("2 hs2q q2w2 "));
+Tests.equalCheck("decode lowercase string", "aabbbcccc", decode("2a3b4c"));
+Tests.equalCheck("encode followed by decode gives original string", "zzz ZZ  zZ", decode(encode("zzz ZZ  zZ")));
 `,Pi=`package main
 
 import "fmt"
@@ -4555,15 +4715,15 @@ if (typeof Build !== "function") {
 }
 
 Tests.equalCheck("empty list", null, Build([]));
-Tests.equalCheck("one node", 0, Build([{ id: 0, parent: 0 }]).id);
+Tests.equalCheck("one node", 0, Build([{ id: 0, parent: 0 }])!.id);
 
 const tree = Build([
   { id: 0, parent: 0 },
   { id: 1, parent: 0 },
   { id: 2, parent: 0 },
 ]);
-Tests.equalCheck("root id", 0, tree.id);
-Tests.equalCheck("root children count", 2, tree.children.length);
+Tests.equalCheck("root id", 0, tree!.id);
+Tests.equalCheck("root children count", 2, tree!.children.length);
 
 let caught = false;
 try {
