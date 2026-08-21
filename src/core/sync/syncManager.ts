@@ -197,7 +197,7 @@ export async function pullFromGist(options?: { smartMerge?: boolean }): Promise<
       return { success: false, error: errorMsg };
     }
 
-    store.getState().restoreBackup(parsed.data);
+    store.setState(parsed.data);
 
     const now = Date.now();
     store.getState().setGistSyncSettings({ lastSyncedAt: now, enabled: true });
@@ -349,6 +349,7 @@ export async function handleOAuthCallback(): Promise<boolean> {
   window.history.replaceState({}, document.title, cleanUrl);
 
   setSyncStatus('syncing', 'Signing in with GitHub...');
+  showPopup('Syncing from GitHub...');
 
   try {
     const exchangeRes = await exchangeOAuthCode(GITHUB_OAUTH_WORKER_URL, code);
@@ -495,7 +496,7 @@ export async function pullAndMergeIfNeeded(
     const currentState = store.getState();
     const parsed = parseAndMergeGistFiles(res.files, currentState, true);
     if (parsed && parsed.data) {
-      store.getState().restoreBackup(parsed.data);
+      store.setState(parsed.data);
       const syncNow = Date.now();
       store.getState().setGistSyncSettings({ lastSyncedAt: syncNow });
       setSyncStatus('synced', 'Synced with cloud.', syncNow);
