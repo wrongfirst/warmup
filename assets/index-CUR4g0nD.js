@@ -3300,27 +3300,55 @@ Tests.equalCheck("2-digit cage sum 10 with excluded digits", JSON.stringify([[2,
 import "fmt"
 
 func main() {
-	res := Plants("RC\\nGG", "Alice")
-	Tests.EqualCheck("Alice plants", fmt.Sprintf("%v", []string{"radishes", "clover", "grass", "grass"}), fmt.Sprintf("%v", res))
+	Tests.EqualCheck("single student Alice", fmt.Sprintf("%v", []string{"radishes", "clover", "grass", "grass"}), fmt.Sprintf("%v", Plants("RC\\nGG", "Alice")))
+	Tests.EqualCheck("two students Bob", fmt.Sprintf("%v", []string{"clover", "grass", "radishes", "clover"}), fmt.Sprintf("%v", Plants("VVCG\\nVVRC", "Bob")))
+	Tests.EqualCheck("Bob in small garden", fmt.Sprintf("%v", []string{"clover", "clover", "clover", "clover"}), fmt.Sprintf("%v", Plants("VVCCGG\\nVVCCGG", "Bob")))
+	Tests.EqualCheck("Charlie in small garden", fmt.Sprintf("%v", []string{"grass", "grass", "grass", "grass"}), fmt.Sprintf("%v", Plants("VVCCGG\\nVVCCGG", "Charlie")))
+
+	fullGarden := "VRCGVVRVCGGCCGVRGCVCGCGV\\nVRCCCGCRRGVCGCRVVCVGCGCV"
+	Tests.EqualCheck("full garden - Alice", fmt.Sprintf("%v", []string{"violets", "radishes", "violets", "radishes"}), fmt.Sprintf("%v", Plants(fullGarden, "Alice")))
+	Tests.EqualCheck("full garden - Bob", fmt.Sprintf("%v", []string{"clover", "grass", "clover", "clover"}), fmt.Sprintf("%v", Plants(fullGarden, "Bob")))
+	Tests.EqualCheck("full garden - Kincaid", fmt.Sprintf("%v", []string{"grass", "clover", "clover", "grass"}), fmt.Sprintf("%v", Plants(fullGarden, "Kincaid")))
+	Tests.EqualCheck("full garden - Larry", fmt.Sprintf("%v", []string{"grass", "violets", "clover", "violets"}), fmt.Sprintf("%v", Plants(fullGarden, "Larry")))
 }
-`,Kr=`let () =
-  let res = plants "RC\\nGG" "Alice" in
-  Tests.equal_check "Alice plants" ["radishes"; "clover"; "grass"; "grass"] res
+`,Kr=`let full_garden = "VRCGVVRVCGGCCGVRGCVCGCGV\\nVRCCCGCRRGVCGCRVVCVGCGCV"
+
+let () =
+  Tests.equal_check "single student Alice" ["radishes"; "clover"; "grass"; "grass"] (plants "RC\\nGG" "Alice");
+  Tests.equal_check "two students Bob" ["clover"; "grass"; "radishes"; "clover"] (plants "VVCG\\nVVRC" "Bob");
+  Tests.equal_check "Bob in small garden" ["clover"; "clover"; "clover"; "clover"] (plants "VVCCGG\\nVVCCGG" "Bob");
+  Tests.equal_check "Charlie in small garden" ["grass"; "grass"; "grass"; "grass"] (plants "VVCCGG\\nVVCCGG" "Charlie");
+  Tests.equal_check "full garden - Alice" ["violets"; "radishes"; "violets"; "radishes"] (plants full_garden "Alice");
+  Tests.equal_check "full garden - Bob" ["clover"; "grass"; "clover"; "clover"] (plants full_garden "Bob");
+  Tests.equal_check "full garden - Kincaid" ["grass"; "clover"; "clover"; "grass"] (plants full_garden "Kincaid");
+  Tests.equal_check "full garden - Larry" ["grass"; "violets"; "clover"; "violets"] (plants full_garden "Larry")
 `,qr=`if 'plants' not in globals():
     raise Exception("plants function is not defined")
 
 Tests.equal_check("single student Alice", ["radishes", "clover", "grass", "grass"], plants("RC\\nGG", "Alice"))
 Tests.equal_check("two students Bob", ["clover", "grass", "radishes", "clover"], plants("VVCG\\nVVRC", "Bob"))
-`,Jr=`// @ts-nocheck
+Tests.equal_check("Bob in small garden", ["clover", "clover", "clover", "clover"], plants("VVCCGG\\nVVCCGG", "Bob"))
+Tests.equal_check("Charlie in small garden", ["grass", "grass", "grass", "grass"], plants("VVCCGG\\nVVCCGG", "Charlie"))
+
+full_garden = "VRCGVVRVCGGCCGVRGCVCGCGV\\nVRCCCGCRRGVCGCRVVCVGCGCV"
+Tests.equal_check("full garden - Alice", ["violets", "radishes", "violets", "radishes"], plants(full_garden, "Alice"))
+Tests.equal_check("full garden - Bob", ["clover", "grass", "clover", "clover"], plants(full_garden, "Bob"))
+Tests.equal_check("full garden - Kincaid", ["grass", "clover", "clover", "grass"], plants(full_garden, "Kincaid"))
+Tests.equal_check("full garden - Larry", ["grass", "violets", "clover", "violets"], plants(full_garden, "Larry"))`,Jr=`// @ts-nocheck
 if (typeof plants !== "function") {
   throw new Error("plants function is not defined");
 }
 
-const diagram1 = "RC\\nGG";
-Tests.equalCheck("garden with single student", JSON.stringify(["radishes", "clover", "grass", "grass"]), JSON.stringify(plants(diagram1, "Alice")));
+Tests.equalCheck("single student Alice", JSON.stringify(["radishes", "clover", "grass", "grass"]), JSON.stringify(plants("RC\\nGG", "Alice")));
+Tests.equalCheck("two students Bob", JSON.stringify(["clover", "grass", "radishes", "clover"]), JSON.stringify(plants("VVCG\\nVVRC", "Bob")));
+Tests.equalCheck("Bob in small garden", JSON.stringify(["clover", "clover", "clover", "clover"]), JSON.stringify(plants("VVCCGG\\nVVCCGG", "Bob")));
+Tests.equalCheck("Charlie in small garden", JSON.stringify(["grass", "grass", "grass", "grass"]), JSON.stringify(plants("VVCCGG\\nVVCCGG", "Charlie")));
 
-const diagram2 = "VVCG\\nVVRC";
-Tests.equalCheck("garden with two students - Bob", JSON.stringify(["clover", "grass", "radishes", "clover"]), JSON.stringify(plants(diagram2, "Bob")));
+const fullGarden = "VRCGVVRVCGGCCGVRGCVCGCGV\\nVRCCCGCRRGVCGCRVVCVGCGCV";
+Tests.equalCheck("full garden - Alice", JSON.stringify(["violets", "radishes", "violets", "radishes"]), JSON.stringify(plants(fullGarden, "Alice")));
+Tests.equalCheck("full garden - Bob", JSON.stringify(["clover", "grass", "clover", "clover"]), JSON.stringify(plants(fullGarden, "Bob")));
+Tests.equalCheck("full garden - Kincaid", JSON.stringify(["grass", "clover", "clover", "grass"]), JSON.stringify(plants(fullGarden, "Kincaid")));
+Tests.equalCheck("full garden - Larry", JSON.stringify(["grass", "violets", "clover", "violets"]), JSON.stringify(plants(fullGarden, "Larry")));
 `,Yr=`package main
 
 func main() {
