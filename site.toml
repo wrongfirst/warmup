@@ -2,7 +2,7 @@
 title = "warmup"
 
 # Language Configuration
-default_language = "python"
+default_language = "typescript"
 languages = ["typescript", "ocaml", "python", "go"]
 
 # URLs
